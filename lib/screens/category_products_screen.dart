@@ -170,7 +170,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                               crossAxisCount: 3,
                               crossAxisSpacing: 8,
                               mainAxisSpacing: 10,
-                              mainAxisExtent: 210,
+                              mainAxisExtent: 240,
                             ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) =>

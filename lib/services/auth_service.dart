@@ -212,4 +212,22 @@ class AuthService {
     }
     return json.decode(res.body) as Map<String, dynamic>;
   }
+
+  static Future<void> deleteAccount() async {
+    final token = await getAccessToken();
+    if (token == null) throw Exception('Not authenticated');
+    final res = await http.delete(
+      Uri.parse('$baseUrl/api/v1/auth/destroy-account/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    print('DELETE ACCOUNT - Status: ${res.statusCode}, Body: ${res.body}');
+    if (res.statusCode != 200) {
+      final body = _safeDecode(res.body) ?? <String, dynamic>{};
+      throw Exception(_extractError(body) ?? 'Failed to delete account (${res.statusCode})');
+    }
+    await _clearAuth();
+  }
 }

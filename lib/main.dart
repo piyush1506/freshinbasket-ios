@@ -24,11 +24,14 @@ import 'screens/order_fail_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/notification_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'firebase_options.dart';
 
 // Top-level background handler — required by firebase_messaging
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 }
 
 // Global navigator key for notification tap navigation
@@ -37,10 +40,16 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  await Firebase.initializeApp();
 
-  // Register background message handler before any messaging setup
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  // Initialize Firebase — non-fatal if it fails (e.g. on iOS simulator)
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } catch (e) {
+    debugPrint('Firebase init failed (non-fatal): $e');
+  }
 
   // Wire notification navigation callback
   NotificationService.onNavigate = (route, {arguments}) {
@@ -51,8 +60,16 @@ void main() async {
     );
   };
 
-  await NotificationService.instance.initialize();
-  await NotificationService.instance.requestPermission();
+  // Initialize notifications — non-fatal if it fails
+  try {
+    await NotificationService.instance.initialize();
+    await NotificationService.instance.requestPermission();
+    // Register device token immediately so admin can send notifications
+    // to ALL app installs (even guest users who haven't created an account)
+    NotificationService.instance.registerDeviceTokenOnStartup();
+  } catch (e) {
+    debugPrint('Notification init failed (non-fatal): $e');
+  }
 
   runApp(const FreshInBasketApp());
 }
@@ -63,6 +80,9 @@ class FreshInBasketApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Prevent Google Fonts from blocking rendering if font download fails
+    GoogleFonts.config.allowRuntimeFetching = true;
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuth()),

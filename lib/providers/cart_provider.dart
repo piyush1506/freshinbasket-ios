@@ -133,7 +133,7 @@ class CartProvider extends ChangeNotifier {
       if (quantity <= 0) {
         await ApiService.removeFromCart(productId);
       } else {
-        await ApiService.addToCart(productId, quantity);
+        await ApiService.addToCart(productId, quantity, isAbsolute: true);
       }
       await _fetchFromBackend(silent: true);
     } catch (_) {
@@ -157,21 +157,24 @@ class CartProvider extends ChangeNotifier {
 
   // ─── Remove ──────────────────────────────────────────────
 
-  Future<void> removeFromBackend(int productId, {int? subProductId}) async {
+  Future<void> removeFromBackend(int productId, {int? subProductId, int? cartItemId}) async {
     final key = subProductId != null ? 's_${productId}_$subProductId' : 'p_$productId';
     
+    final existingItem = _items.where((i) => i.cartKey == key || i.productId == productId).firstOrNull;
+    final dbId = cartItemId ?? existingItem?.id;
+
     // Optimistic UI update
     _removeLocal(key);
 
     if (_isLoggedIn) {
       // Fire and forget backend sync
-      _syncRemoveFromBackend(productId);
+      _syncRemoveFromBackend(productId, cartItemId: dbId);
     }
   }
 
-  Future<void> _syncRemoveFromBackend(int productId) async {
+  Future<void> _syncRemoveFromBackend(int productId, {int? cartItemId}) async {
     try {
-      await ApiService.removeFromCart(productId);
+      await ApiService.removeFromCart(productId, cartItemId: cartItemId);
       await _fetchFromBackend(silent: true);
     } catch (_) {
       // Re-sync on failure

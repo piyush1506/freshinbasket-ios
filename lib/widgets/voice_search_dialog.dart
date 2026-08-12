@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VoiceSearchDialog extends StatefulWidget {
   const VoiceSearchDialog({super.key});
@@ -25,9 +26,21 @@ class _VoiceSearchDialogState extends State<VoiceSearchDialog> with SingleTicker
   }
 
   void _initSpeech() async {
+    // Explicitly request microphone permission
+    var status = await Permission.microphone.request();
+    if (status.isDenied || status.isPermanentlyDenied) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone permission is required for voice search. Please enable it in Settings.')),
+        );
+        Navigator.pop(context);
+      }
+      return;
+    }
+
     bool available = await _speechToText.initialize(
-      onStatus: (status) {
-        if (status == 'done' || status == 'notListening') {
+      onStatus: (st) {
+        if (st == 'done' || st == 'notListening') {
           if (mounted && _isListening) {
             _stopListening();
           }

@@ -264,19 +264,27 @@ class ApiService {
     return (data['items'] as List?)?.map((i) => CartItem.fromJson(i)).toList() ?? [];
   }
 
-  static Future<void> addToCart(int productId, double quantity) async {
+  static Future<void> addToCart(int productId, double quantity, {bool isAbsolute = false}) async {
     await _request(() async => http.post(
       Uri.parse('$baseUrl/api/v1/cart/add_item/'),
       headers: await _headers(),
-      body: json.encode({'product_id': productId, 'quantity': quantity}),
+      body: json.encode({
+        'product_id': productId,
+        'quantity': quantity,
+        if (isAbsolute) 'is_absolute': true,
+      }),
     ));
   }
 
-  static Future<void> removeFromCart(int productId) async {
-    await _request(() async => http.delete(
+  static Future<void> removeFromCart(int productId, {int? cartItemId}) async {
+    await _request(() async => http.post(
       Uri.parse('$baseUrl/api/v1/cart/remove_item/'),
       headers: await _headers(),
-      body: json.encode({'product_id': productId}),
+      body: json.encode({
+        'product_id': productId,
+        if (cartItemId != null) 'id': cartItemId,
+        if (cartItemId != null) 'cart_item_id': cartItemId,
+      }),
     ));
   }
 
@@ -557,11 +565,35 @@ class ApiService {
 
   // ─── FCM Token Registration ──────────────────────────────────────────────
 
+  /// Registers FCM token for an **authenticated** user.
   static Future<void> registerFCMToken(String token) async {
     await _request(() async => http.post(
       Uri.parse('$baseUrl/api/v1/notifications/register-token/'),
       headers: await _headers(),
       body: json.encode({'token': token}),
     ));
+  }
+
+  /// Registers FCM token for **any device** (guest or logged-in).
+  /// This allows admin to send notifications to all app installs.
+  static Future<void> registerDeviceToken(String token) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final accessToken = prefs.getString('access_token');
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+      };
+      await http.post(
+        Uri.parse('$baseUrl/api/v1/notifications/register-device/'),
+        headers: headers,
+        body: json.encode({
+          'token': token,
+          'platform': Platform.isIOS ? 'ios' : 'android',
+        }),
+      );
+    } catch (_) {
+      // Non-fatal — device token registration failure should never crash the app
+    }
   }
 }

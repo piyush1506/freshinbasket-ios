@@ -2,13 +2,17 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_service.dart';
+import '../firebase_options.dart';
 
 // ─── Background message handler (MUST be top-level function) ─────────────────
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (_) {}
   // Android/iOS system tray handles display automatically.
-  // Nothing extra needed here — FCM renders the notification for us.
 }
 
 // ─── Notification channels ────────────────────────────────────────────────────
@@ -86,7 +90,27 @@ class NotificationService {
         settings.authorizationStatus == AuthorizationStatus.provisional;
   }
 
-  // ─── Get FCM token and register with backend ───────────────────────────────
+  // ─── Register device token on app startup (guest + logged-in) ─────────────
+  /// Call this once at app startup so ALL app installs are registered
+  /// for push notifications, even before the user creates an account.
+  Future<void> registerDeviceTokenOnStartup() async {
+    try {
+      final token = await _fcm.getToken();
+      if (token != null) {
+        await ApiService.registerDeviceToken(token);
+      }
+      // Listen for token refresh so the backend always has the latest token
+      _fcm.onTokenRefresh.listen((newToken) async {
+        try {
+          await ApiService.registerDeviceToken(newToken);
+        } catch (_) {}
+      });
+    } catch (_) {
+      // Non-fatal — device registration failure should never block app startup
+    }
+  }
+
+  // ─── Get FCM token and register with backend (authenticated user) ─────────
   Future<void> getAndRegisterToken() async {
     try {
       final token = await _fcm.getToken();

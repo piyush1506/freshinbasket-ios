@@ -126,7 +126,7 @@ class CartScreen extends StatelessWidget {
               width: 200,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  MainShell.switchTab(context, 1);
+                  MainShell.switchTab(context, 0); // Redirects to Home Tab
                 },
                 icon: const Icon(Icons.search, size: 18),
                 label: const Text('Start Shopping', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -482,6 +482,7 @@ class _CartItemCard extends StatelessWidget {
                                         cart.updateQuantity(
                                           item.productId,
                                           item.quantity - item.orderStep,
+                                          subProductId: item.subProductId,
                                         );
                                       }),
                                       Container(
@@ -502,6 +503,7 @@ class _CartItemCard extends StatelessWidget {
                                         cart.updateQuantity(
                                           item.productId,
                                           item.quantity + item.orderStep,
+                                          subProductId: item.subProductId,
                                         );
                                       }),
                                     ],
@@ -552,7 +554,7 @@ class _CartItemCard extends StatelessWidget {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => cart.removeFromBackend(item.productId),
+                  onTap: () => cart.removeFromBackend(item.productId, subProductId: item.subProductId, cartItemId: item.id),
                   child: Container(
                     width: 48,
                     alignment: Alignment.center,

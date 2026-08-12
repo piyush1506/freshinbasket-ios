@@ -423,7 +423,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 width: double.infinity,
                                 child: TextButton.icon(
                                   onPressed: () {
-                                    cart.removeFromBackend(product.id, subProductId: _selectedSub?.id);
+                                    cart.removeFromBackend(product.id, subProductId: _selectedSub?.id, cartItemId: cartItem.id);
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('Removed from cart'), behavior: SnackBarBehavior.floating),
                                     );
@@ -457,7 +457,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     crossAxisCount: 2,
                                     mainAxisSpacing: 10,
                                     crossAxisSpacing: 8,
-                                    mainAxisExtent: 210,
+                                    mainAxisExtent: 240,
                                   ),
                                   itemCount: snap.data!.length,
                                   itemBuilder: (context, index) {
@@ -508,7 +508,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                     crossAxisCount: 2,
                                     mainAxisSpacing: 10,
                                     crossAxisSpacing: 8,
-                                    mainAxisExtent: 210,
+                                    mainAxisExtent: 240,
                                   ),
                                   itemCount: displayProducts.length,
                                   itemBuilder: (context, index) {

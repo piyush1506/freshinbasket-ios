@@ -332,6 +332,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
 
+                    const SizedBox(height: 12),
+
+                    // Delete Account Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () => _confirmDeleteAccount(context),
+                        icon: const Icon(Icons.delete_forever, color: Colors.red),
+                        label: const Text('Delete Account',
+                            style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(color: Colors.red),
+                          ),
+                        ),
+                      ),
+                    ),
+
                     const SizedBox(height: 24),
 
                     const Text(
@@ -374,5 +397,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       },
     );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Account', style: TextStyle(color: Colors.red)),
+        content: const Text(
+          'Are you sure you want to delete your account?\n\n'
+          'This will permanently remove your personal data and cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      // Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+      try {
+        await context.read<AuthProvider>().deleteAccount();
+        if (mounted) {
+          Navigator.pop(context); // dismiss loading
+          Navigator.of(context).pushNamedAndRemoveUntil('/auth', (route) => false);
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // dismiss loading
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete account: ${e.toString().replaceFirst('Exception: ', '')}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
   }
 }
