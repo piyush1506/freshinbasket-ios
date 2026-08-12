@@ -40,6 +40,15 @@ class CartProvider extends ChangeNotifier {
   double get subtotal =>
       _items.fold(0.0, (sum, item) => sum + item.totalPrice);
 
+  double get totalMrp =>
+      _items.fold(0.0, (sum, item) => sum + item.totalMrp);
+
+  double get totalSavings =>
+      _items.fold(0.0, (sum, item) => sum + item.totalSavings);
+
+  int get overallDiscountPercent =>
+      totalMrp > subtotal && totalMrp > 0 ? (((totalMrp - subtotal) / totalMrp) * 100).round() : 0;
+
   double get deliveryCharge =>
       subtotal >= _settings.freeDeliveryThreshold ? 0.0 : _settings.deliveryCharge;
 
@@ -60,6 +69,8 @@ class CartProvider extends ChangeNotifier {
     final orderStep = source is Product ? source.orderStep : (source is CartItem ? source.orderStep : 1.0);
     final minOrderQty = source is Product ? source.minOrderQty : (source is CartItem ? source.minOrderQty : 0.0);
     final price = source is Product ? source.price : (source is CartItem ? source.price : 0.0);
+    final mrp = source is Product ? source.mrp : (source is CartItem ? source.mrp : 0.0);
+    final discountPercentage = source is Product ? source.discountPercentage : (source is CartItem ? source.discountPercentage : 0.0);
     final name = source is Product ? source.name : (source is CartItem ? source.name : '');
     final image = source is Product ? source.imageUrl : (source is CartItem ? source.image : null);
     final unit = source is Product ? source.unit : (source is CartItem ? source.unit : null);
@@ -77,6 +88,8 @@ class CartProvider extends ChangeNotifier {
         subProductId: subProductId,
         name: name,
         price: price,
+        mrp: mrp,
+        discountPercentage: discountPercentage,
         image: image,
         unit: unit,
         quantity: initialQty,
