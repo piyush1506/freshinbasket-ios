@@ -126,7 +126,7 @@ class CartScreen extends StatelessWidget {
               width: 200,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  MainShell.switchTab(context, 0); // Redirects to Home Tab
+                  MainShell.switchTab(context, 1);
                 },
                 icon: const Icon(Icons.search, size: 18),
                 label: const Text('Start Shopping', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -167,19 +167,9 @@ class CartScreen extends StatelessWidget {
             'Order Summary',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF222222)),
           ),
-          if (cart.totalSavings > 0) ...[
-            _summaryRow('Item Subtotal (MRP)', '₹${cart.totalMrp.toStringAsFixed(0)}'),
-            const SizedBox(height: 12),
-            _summaryRow(
-              'Product Discount',
-              '-₹${cart.totalSavings.toStringAsFixed(0)} (${cart.overallDiscountPercent}% OFF)',
-              valueColor: const Color(0xFF2E7D32),
-            ),
-            const SizedBox(height: 12),
-          ] else ...[
-            _summaryRow('Item Subtotal', '₹${cart.subtotal.toStringAsFixed(0)}'),
-            const SizedBox(height: 12),
-          ],
+          const SizedBox(height: 16),
+          _summaryRow('Item Subtotal', '₹${cart.subtotal.toStringAsFixed(0)}'),
+          const SizedBox(height: 12),
           _summaryRow(
             'Delivery Fee',
             cart.deliveryCharge == 0
@@ -242,29 +232,6 @@ class CartScreen extends StatelessWidget {
             bold: true,
             valueColor: const Color(0xFF164431),
           ),
-          if (cart.totalSavings > 0) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.savings_rounded, color: Color(0xFF2E7D32), size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'You will save ₹${cart.totalSavings.toStringAsFixed(0)} on this order! 🎉',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF2E7D32), fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -515,7 +482,6 @@ class _CartItemCard extends StatelessWidget {
                                         cart.updateQuantity(
                                           item.productId,
                                           item.quantity - item.orderStep,
-                                          subProductId: item.subProductId,
                                         );
                                       }),
                                       Container(
@@ -536,7 +502,6 @@ class _CartItemCard extends StatelessWidget {
                                         cart.updateQuantity(
                                           item.productId,
                                           item.quantity + item.orderStep,
-                                          subProductId: item.subProductId,
                                         );
                                       }),
                                     ],
@@ -571,35 +536,6 @@ class _CartItemCard extends StatelessWidget {
                                     color: Color(0xFF164431),
                                   ),
                                 ),
-                                if (item.totalMrp > item.totalPrice) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '₹${item.totalMrp.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF888888),
-                                      fontSize: 12,
-                                      decoration: TextDecoration.lineThrough,
-                                    ),
-                                  ),
-                                  if (item.calculatedDiscountPercent > 0) ...[
-                                    const SizedBox(height: 2),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE8F5E9),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        '${item.calculatedDiscountPercent}% OFF',
-                                        style: const TextStyle(
-                                          color: Color(0xFF2E7D32),
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
                               ],
                             ),
                           ),
@@ -616,7 +552,7 @@ class _CartItemCard extends StatelessWidget {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => cart.removeFromBackend(item.productId, subProductId: item.subProductId, cartItemId: item.id),
+                  onTap: () => cart.removeFromBackend(item.productId),
                   child: Container(
                     width: 48,
                     alignment: Alignment.center,

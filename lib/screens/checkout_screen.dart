@@ -622,19 +622,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 title: 'Bill Summary',
                 child: Column(
                   children: [
-                    if (cart.totalSavings > 0) ...[
-                      _billRow('Item Subtotal (MRP)', '₹${cart.totalMrp.toStringAsFixed(2)}'),
-                      const SizedBox(height: 8),
-                      _billRow(
-                        'Product Discount',
-                        '-₹${cart.totalSavings.toStringAsFixed(2)} (${cart.overallDiscountPercent}% OFF)',
-                        valueColor: const Color(0xFF2E7D32),
-                      ),
-                      const SizedBox(height: 8),
-                    ] else ...[
-                      _billRow('Subtotal', '₹${cart.subtotal.toStringAsFixed(2)}'),
-                      const SizedBox(height: 8),
-                    ],
+                    _billRow(
+                        'Subtotal', '₹${cart.subtotal.toStringAsFixed(2)}'),
+                    const SizedBox(height: 8),
                     _billRow(
                       'Delivery Charge',
                       cart.deliveryCharge == 0
@@ -680,33 +670,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ],
                     ),
-                    if (cart.totalSavings > 0) ...[
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.savings_rounded, color: Color(0xFF2E7D32), size: 16),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                'Your total savings on this order: ₹${cart.totalSavings.toStringAsFixed(0)}! 🎉',
-                                style: const TextStyle(
-                                  color: Color(0xFF2E7D32),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),

@@ -149,21 +149,4 @@ class AuthProvider extends ChangeNotifier {
       rethrow;
     }
   }
-
-  Future<void> deleteAccount() async {
-    _loading = true;
-    _error = null;
-    notifyListeners();
-    try {
-      await AuthService.deleteAccount();
-      _user = null;
-      _loading = false;
-      notifyListeners();
-    } catch (e) {
-      _error = e.toString().replaceFirst('Exception: ', '');
-      _loading = false;
-      notifyListeners();
-      rethrow;
-    }
-  }
 }

@@ -184,82 +184,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
-            
-            const SizedBox(height: 32),
-            const Divider(),
-            const SizedBox(height: 16),
-            
-            // Delete Account Button
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: () => _confirmDeleteAccount(context),
-                icon: const Icon(Icons.delete_forever, color: Colors.red),
-                label: const Text(
-                  'Delete Account',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: Colors.red),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
-
-  Future<void> _confirmDeleteAccount(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Account', style: TextStyle(color: Colors.red)),
-        content: const Text(
-          'Are you sure you want to delete your account?\n\n'
-          'This will permanently remove your personal data and cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      setState(() => _saving = true);
-      try {
-        await context.read<AuthProvider>().deleteAccount();
-        if (mounted) {
-          // Send to login screen and clear history
-          Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to delete account: ${e.toString()}'),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _saving = false);
-      }
-    }
-  }
 }
-

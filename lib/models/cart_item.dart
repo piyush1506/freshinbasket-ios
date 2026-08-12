@@ -4,8 +4,6 @@ class CartItem {
   final int? subProductId;
   final String name;
   final double price;
-  final double mrp;
-  final double discountPercentage;
   final String? image;
   final String? unit;
   double quantity;
@@ -19,8 +17,6 @@ class CartItem {
     this.subProductId,
     required this.name,
     required this.price,
-    this.mrp = 0.0,
-    this.discountPercentage = 0.0,
     this.image,
     this.unit,
     this.quantity = 1.0,
@@ -30,17 +26,6 @@ class CartItem {
   });
 
   double get totalPrice => price * quantity;
-  double get totalMrp => (mrp > price ? mrp : price) * quantity;
-  double get totalSavings => (totalMrp - totalPrice) > 0 ? (totalMrp - totalPrice) : 0.0;
-
-  int get calculatedDiscountPercent {
-    if (discountPercentage > 0) return discountPercentage.round();
-    if (mrp > price && mrp > 0) {
-      return (((mrp - price) / mrp) * 100).round();
-    }
-    return 0;
-  }
-
   String get cartKey => subProductId != null ? 's_${productId}_$subProductId' : 'p_$productId';
 
   static double _toDouble(dynamic v, {double fallback = 0.0}) {
@@ -49,6 +34,8 @@ class CartItem {
     if (v is String) return double.tryParse(v) ?? fallback;
     return fallback;
   }
+
+
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
     final product = json['product'] is Map ? json['product'] as Map : null;
@@ -63,8 +50,6 @@ class CartItem {
           : (json['sub_product_id'] ?? json['sub_product']),
       name: product?['name'] ?? json['name'] ?? json['product_name'] ?? '',
       price: _toDouble(product?['price'] ?? json['price'] ?? json['unit_price']),
-      mrp: _toDouble(product?['mrp'] ?? json['mrp']),
-      discountPercentage: _toDouble(product?['discount_percentage'] ?? json['discount_percentage']),
       image: product?['image'] ?? json['product_image_url'] ?? json['image'] ?? json['image_url'],
       unit: unitMap?['name'] ?? product?['unit'] ?? json['unit'] ?? json['unit_name'],
       quantity: _toDouble(json['quantity'], fallback: 1.0),
@@ -79,8 +64,6 @@ class CartItem {
     if (subProductId != null) 'sub_product_id': subProductId,
     'name': name,
     'price': price,
-    'mrp': mrp,
-    'discount_percentage': discountPercentage,
     'image': image,
     'unit': unit,
     'quantity': quantity,

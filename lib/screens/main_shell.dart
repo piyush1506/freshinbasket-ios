@@ -27,7 +27,6 @@ class MainShell extends StatefulWidget {
 
 class MainShellState extends State<MainShell> {
   late int _currentTab;
-  late PageController _pageController;
   bool _isBottomNavVisible = true;
 
   final _pages = const [
@@ -42,7 +41,6 @@ class MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _currentTab = widget.initialTab;
-    _pageController = PageController(initialPage: _currentTab);
     ApiService.onUnauthorized = () {
       if (mounted) {
         context.read<AuthProvider>().logout();
@@ -52,21 +50,8 @@ class MainShellState extends State<MainShell> {
     };
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   void switchTab(int index) {
-    if (index != _currentTab) {
-      setState(() => _currentTab = index);
-      _pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
+    if (index != _currentTab) setState(() => _currentTab = index);
   }
 
   @override
@@ -78,21 +63,15 @@ class MainShellState extends State<MainShell> {
     return Scaffold(
       body: NotificationListener<UserScrollNotification>(
         onNotification: (notification) {
-          // Only hide/show nav bar for vertical scrolls (not horizontal page swipes)
-          if (notification.metrics.axis == Axis.vertical) {
-            if (notification.direction == ScrollDirection.forward) {
-              if (!_isBottomNavVisible) setState(() => _isBottomNavVisible = true);
-            } else if (notification.direction == ScrollDirection.reverse) {
-              if (_isBottomNavVisible) setState(() => _isBottomNavVisible = false);
-            }
+          if (notification.direction == ScrollDirection.forward) {
+            if (!_isBottomNavVisible) setState(() => _isBottomNavVisible = true);
+          } else if (notification.direction == ScrollDirection.reverse) {
+            if (_isBottomNavVisible) setState(() => _isBottomNavVisible = false);
           }
           return false;
         },
-        child: PageView(
-          controller: _pageController,
-          onPageChanged: (index) {
-            setState(() => _currentTab = index);
-          },
+        child: IndexedStack(
+          index: _currentTab,
           children: _pages,
         ),
       ),

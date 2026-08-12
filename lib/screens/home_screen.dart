@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:freshinbasket/models/slide.dart';
 import '../models/product.dart';
 import '../models/category.dart';
@@ -414,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: 10,
             crossAxisSpacing: 8,
-            mainAxisExtent: 230,
+            mainAxisExtent: 210,
           ),
           delegate: SliverChildBuilderDelegate(
             (context, index) => ProductCard(
@@ -484,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisCount: crossAxisCount,
             mainAxisSpacing: 10,
             crossAxisSpacing: 8,
-            mainAxisExtent: 230,
+            mainAxisExtent: 210,
           ),
           delegate: SliverChildBuilderDelegate(
             (context, index) => ProductCard(
@@ -607,32 +606,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _handleBannerTap(String? link) async {
-    if (link == null || link.trim().isEmpty) return;
-    final cleanLink = link.trim();
-
-    if (cleanLink.startsWith('http://') || cleanLink.startsWith('https://')) {
-      final uri = Uri.tryParse(cleanLink);
-      if (uri != null && await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-      return;
-    }
-
-    String route = cleanLink;
-    if (!route.startsWith('/')) {
-      route = '/$route';
-    }
-
-    if (mounted) {
-      try {
-        Navigator.pushNamed(context, route);
-      } catch (e) {
-        debugPrint('Error navigating to banner route $route: $e');
-      }
-    }
-  }
-
   Widget _buildSlider(List<Slide> slides) {
     if (_slideTimer == null || !_slideTimer!.isActive) {
       WidgetsBinding.instance
@@ -649,72 +622,69 @@ class _HomeScreenState extends State<HomeScreen> {
             onPageChanged: (i) => setState(() => _currentSlide = i),
             itemBuilder: (context, index) {
               final slide = slides[index];
-              return GestureDetector(
-                onTap: () => _handleBannerTap(slide.link),
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  image: slide.imageUrl != null
+                      ? DecorationImage(
+                          image: CachedNetworkImageProvider(slide.imageUrl!),
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.high,
+                        )
+                      : null,
+                ),
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    image: slide.imageUrl != null
-                        ? DecorationImage(
-                            image: CachedNetworkImageProvider(slide.imageUrl!),
-                            fit: BoxFit.cover,
-                            filterQuality: FilterQuality.high,
+                    // Dark gradient so text is always visible
+                    gradient: (slide.title.isNotEmpty || slide.subtitle.isNotEmpty)
+                        ? LinearGradient(
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.65),
+                              Colors.transparent,
+                            ],
                           )
                         : null,
                   ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      // Dark gradient so text is always visible
-                      gradient: (slide.title.isNotEmpty || slide.subtitle.isNotEmpty)
-                          ? LinearGradient(
-                              begin: Alignment.bottomLeft,
-                              end: Alignment.topRight,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.65),
-                                Colors.transparent,
-                              ],
-                            )
-                          : null,
-                    ),
-                    padding: const EdgeInsets.fromLTRB(20, 16, 60, 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (slide.title.isNotEmpty)
-                          Text(
-                            slide.title,
-                            style: TextStyle(
-                              color: _parseHexColor(slide.textColor, Colors.white),
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              shadows: const [
-                                Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 1)),
-                              ],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 60, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (slide.title.isNotEmpty)
+                        Text(
+                          slide.title,
+                          style: TextStyle(
+                            color: _parseHexColor(slide.textColor, Colors.white),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            shadows: const [
+                              Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 1)),
+                            ],
                           ),
-                        if (slide.subtitle.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            slide.subtitle,
-                            style: TextStyle(
-                              color: _parseHexColor(slide.textColor, Colors.white70),
-                              fontSize: 13,
-                              height: 1.3,
-                              shadows: const [
-                                Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 1)),
-                              ],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      if (slide.subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          slide.subtitle,
+                          style: TextStyle(
+                            color: _parseHexColor(slide.textColor, Colors.white70),
+                            fontSize: 13,
+                            height: 1.3,
+                            shadows: const [
+                              Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(0, 1)),
+                            ],
                           ),
-                        ],
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               );

@@ -26,8 +26,6 @@ class CartProvider extends ChangeNotifier {
         _loading = false;
       }
       notifyListeners();
-    } else {
-      await loadGuestCart();
     }
   }
 
@@ -39,15 +37,6 @@ class CartProvider extends ChangeNotifier {
 
   double get subtotal =>
       _items.fold(0.0, (sum, item) => sum + item.totalPrice);
-
-  double get totalMrp =>
-      _items.fold(0.0, (sum, item) => sum + item.totalMrp);
-
-  double get totalSavings =>
-      _items.fold(0.0, (sum, item) => sum + item.totalSavings);
-
-  int get overallDiscountPercent =>
-      totalMrp > subtotal && totalMrp > 0 ? (((totalMrp - subtotal) / totalMrp) * 100).round() : 0;
 
   double get deliveryCharge =>
       subtotal >= _settings.freeDeliveryThreshold ? 0.0 : _settings.deliveryCharge;
@@ -69,8 +58,6 @@ class CartProvider extends ChangeNotifier {
     final orderStep = source is Product ? source.orderStep : (source is CartItem ? source.orderStep : 1.0);
     final minOrderQty = source is Product ? source.minOrderQty : (source is CartItem ? source.minOrderQty : 0.0);
     final price = source is Product ? source.price : (source is CartItem ? source.price : 0.0);
-    final mrp = source is Product ? source.mrp : (source is CartItem ? source.mrp : 0.0);
-    final discountPercentage = source is Product ? source.discountPercentage : (source is CartItem ? source.discountPercentage : 0.0);
     final name = source is Product ? source.name : (source is CartItem ? source.name : '');
     final image = source is Product ? source.imageUrl : (source is CartItem ? source.image : null);
     final unit = source is Product ? source.unit : (source is CartItem ? source.unit : null);
@@ -88,8 +75,6 @@ class CartProvider extends ChangeNotifier {
         subProductId: subProductId,
         name: name,
         price: price,
-        mrp: mrp,
-        discountPercentage: discountPercentage,
         image: image,
         unit: unit,
         quantity: initialQty,
@@ -148,7 +133,7 @@ class CartProvider extends ChangeNotifier {
       if (quantity <= 0) {
         await ApiService.removeFromCart(productId);
       } else {
-        await ApiService.addToCart(productId, quantity, isAbsolute: true);
+        await ApiService.addToCart(productId, quantity);
       }
       await _fetchFromBackend(silent: true);
     } catch (_) {
@@ -172,24 +157,21 @@ class CartProvider extends ChangeNotifier {
 
   // ─── Remove ──────────────────────────────────────────────
 
-  Future<void> removeFromBackend(int productId, {int? subProductId, int? cartItemId}) async {
+  Future<void> removeFromBackend(int productId, {int? subProductId}) async {
     final key = subProductId != null ? 's_${productId}_$subProductId' : 'p_$productId';
     
-    final existingItem = _items.where((i) => i.cartKey == key || i.productId == productId).firstOrNull;
-    final dbId = cartItemId ?? existingItem?.id;
-
     // Optimistic UI update
     _removeLocal(key);
 
     if (_isLoggedIn) {
       // Fire and forget backend sync
-      _syncRemoveFromBackend(productId, cartItemId: dbId);
+      _syncRemoveFromBackend(productId);
     }
   }
 
-  Future<void> _syncRemoveFromBackend(int productId, {int? cartItemId}) async {
+  Future<void> _syncRemoveFromBackend(int productId) async {
     try {
-      await ApiService.removeFromCart(productId, cartItemId: cartItemId);
+      await ApiService.removeFromCart(productId);
       await _fetchFromBackend(silent: true);
     } catch (_) {
       // Re-sync on failure
