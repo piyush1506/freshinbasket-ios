@@ -261,7 +261,14 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/cart/'),
       headers: await _headers(),
     ));
-    return (data['items'] as List?)?.map((i) => CartItem.fromJson(i)).toList() ?? [];
+    if (data == null) return [];
+    List? itemsList;
+    if (data is Map && data.containsKey('items')) {
+      itemsList = data['items'] as List?;
+    } else if (data is List && data.isNotEmpty && data[0] is Map && data[0].containsKey('items')) {
+      itemsList = data[0]['items'] as List?;
+    }
+    return itemsList?.map((i) => CartItem.fromJson(i)).toList() ?? [];
   }
 
   static Future<void> addToCart(int productId, double quantity, {bool isAbsolute = false}) async {

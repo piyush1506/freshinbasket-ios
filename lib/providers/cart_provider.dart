@@ -26,6 +26,8 @@ class CartProvider extends ChangeNotifier {
         _loading = false;
       }
       notifyListeners();
+    } else {
+      await loadGuestCart();
     }
   }
 
