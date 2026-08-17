@@ -9,7 +9,6 @@ workflows:
       cocoapods: default
       groups:
         - t1
-        - app_store_credentials
       vars:
         BUNDLE_ID: "com.freshinbasket.app"
     scripts:
