@@ -24,6 +24,7 @@ import 'screens/order_fail_screen.dart';
 import 'screens/splash_screen.dart';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
 import 'services/notification_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -53,7 +54,7 @@ void main() async {
     await dotenv.load(fileName: ".env");
   } catch (_) {}
 
-  // Safe Firebase & Push Notifications initialization
+  // Safe Firebase initialization
   bool firebaseReady = false;
   try {
     await Firebase.initializeApp();
@@ -63,17 +64,29 @@ void main() async {
   if (firebaseReady) {
     try {
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-      NotificationService.onNavigate = (route, {arguments}) {
-        navigatorKey.currentState?.pushNamedAndRemoveUntil(
-          route,
-          (r) => false,
-          arguments: arguments,
-        );
-      };
-      await NotificationService.instance.initialize();
-      await NotificationService.instance.requestPermission();
     } catch (_) {}
   }
+
+  // Setup Notification Service & trigger iOS native permission dialog on open
+  try {
+    NotificationService.onNavigate = (route, {arguments}) {
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        route,
+        (r) => false,
+        arguments: arguments,
+      );
+    };
+    await NotificationService.instance.initialize();
+    await NotificationService.instance.requestPermission();
+  } catch (_) {}
+
+  // Request Location Permission on App Open
+  try {
+    LocationPermission locPerm = await Geolocator.checkPermission();
+    if (locPerm == LocationPermission.denied) {
+      await Geolocator.requestPermission();
+    }
+  } catch (_) {}
 
   runApp(const FreshInBasketApp());
 }

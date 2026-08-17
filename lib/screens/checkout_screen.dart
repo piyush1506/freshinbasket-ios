@@ -41,6 +41,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   double? _distanceFromStation; // in km
   bool _outOfRange = false;
+  bool _isGettingLocation = false;
 
   static const _green = Color(0xFF164431);
   static const _lightGreen = Color(0xFFF0FDF4);
@@ -113,59 +114,72 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _getCurrentLocation({required bool isUserClick}) async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+    if (_isGettingLocation) return;
+    setState(() => _isGettingLocation = true);
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        if (mounted && isUserClick) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Location permissions are denied.')));
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted && isUserClick) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Location permissions are denied.'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        if (isUserClick && mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                  'Location permissions are permanently denied. Please enable them in settings.'),
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'SETTINGS',
+                textColor: Colors.white,
+                onPressed: () async {
+                  await Geolocator.openAppSettings();
+                },
+              ),
+            ),
+          );
         }
         return;
       }
-    }
-    if (permission == LocationPermission.deniedForever) {
-      if (isUserClick && mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Location permissions are permanently denied. Please enable them in settings.'),
-            duration: Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      return;
-    }
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if (isUserClick && mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-                'Location services (GPS) are disabled. Please turn on GPS.'),
-            backgroundColor: Colors.redAccent,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'ENABLE',
-              textColor: Colors.white,
-              onPressed: () async {
-                await Geolocator.openLocationSettings();
-              },
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (isUserClick && mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                  'Location services (GPS) are disabled. Please turn on GPS.'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: 'ENABLE',
+                textColor: Colors.white,
+                onPressed: () async {
+                  await Geolocator.openLocationSettings();
+                },
+              ),
             ),
-          ),
-        );
+          );
+        }
+        return;
       }
-      return;
-    }
-    try {
       Position? position;
       try {
         position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium,
+          desiredAccuracy: LocationAccuracy.high,
           timeLimit: const Duration(seconds: 10),
         );
       } catch (_) {
@@ -180,15 +194,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           _mapInteracted = true;
         });
       }
-      _reverseGeocode(position.latitude, position.longitude);
+      await _reverseGeocode(position.latitude, position.longitude);
+      if (isUserClick && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('📍 Live location detected successfully!'),
+            backgroundColor: _green,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       if (isUserClick) {
         ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                'Could not get location: $e. Try opening settings to check permissions.'),
+            content: Text('Could not get location: $e'),
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 3),
             action: SnackBarAction(
@@ -199,6 +222,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGettingLocation = false);
       }
     }
   }
@@ -413,7 +440,60 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 icon: Icons.location_on_rounded,
                 title: 'Delivery Location',
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Prominent Live Location Button
+                    InkWell(
+                      onTap: _isGettingLocation
+                          ? null
+                          : () => _getCurrentLocation(isUserClick: true),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: _green,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _green.withOpacity(0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_isGettingLocation)
+                              const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            else
+                              const Icon(Icons.my_location_rounded,
+                                  color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              _isGettingLocation
+                                  ? 'Detecting Live Location...'
+                                  : 'Use My Current / Live Location',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
                     // Map
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),

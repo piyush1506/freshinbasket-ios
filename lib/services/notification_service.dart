@@ -50,12 +50,12 @@ class NotificationService {
   // ─── Initialize ───────────────────────────────────────────────────────────
   Future<void> initialize() async {
     try {
-      // 1. Setup local notifications
+      // 1. Setup local notifications & request iOS permissions on launch
       const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
       const iosInit = DarwinInitializationSettings(
-        requestAlertPermission: false,
-        requestBadgePermission: false,
-        requestSoundPermission: false,
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
       );
       await _localNotif.initialize(
         const InitializationSettings(android: androidInit, iOS: iosInit),
@@ -91,16 +91,27 @@ class NotificationService {
   // ─── Request permission ────────────────────────────────────────────────────
   Future<bool> requestPermission() async {
     try {
-      final fcm = _fcm;
-      if (fcm == null) return false;
-      final settings = await fcm.requestPermission(
+      // Request native iOS notification permission
+      final iosPlugin = _localNotif.resolvePlatformSpecificImplementation<
+          DarwinFlutterLocalNotificationsPlugin>();
+      final granted = await iosPlugin?.requestPermissions(
         alert: true,
         badge: true,
         sound: true,
-        provisional: false,
       );
-      return settings.authorizationStatus == AuthorizationStatus.authorized ||
-          settings.authorizationStatus == AuthorizationStatus.provisional;
+
+      final fcm = _fcm;
+      if (fcm != null) {
+        final settings = await fcm.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+          provisional: false,
+        );
+        return settings.authorizationStatus == AuthorizationStatus.authorized ||
+            settings.authorizationStatus == AuthorizationStatus.provisional;
+      }
+      return granted ?? false;
     } catch (_) {
       return false;
     }
