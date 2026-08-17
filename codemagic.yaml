@@ -26,9 +26,12 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
+          # Generate a fresh private key for certificate creation
+          openssl genrsa -out /tmp/cert_key.pem 2048
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
+            --create \
+            --certificate-key /tmp/cert_key.pem
           keychain add-certificates
           xcode-project use-profiles
       # Step 4: Build using xcode-project (Codemagic CLI) instead of flutter build ipa
