@@ -16,6 +16,11 @@
 	<string>Freshinbasket requires camera access to allow you to take and upload a profile picture.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Freshinbasket requires photo library access to choose a profile picture.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
