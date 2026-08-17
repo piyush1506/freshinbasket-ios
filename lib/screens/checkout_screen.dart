@@ -115,12 +115,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _getCurrentLocation({required bool isUserClick}) async {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
-      if (!isUserClick) return;
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        if (mounted)
+        if (mounted && isUserClick) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('Location permissions are denied.')));
+        }
         return;
       }
     }
@@ -162,11 +162,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
     try {
-      Position? position = await Geolocator.getLastKnownPosition();
-      position ??= await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 8),
-      );
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 10),
+        );
+      } catch (_) {
+        position = await Geolocator.getLastKnownPosition();
+      }
+      if (position == null) return;
       final newLoc = LatLng(position.latitude, position.longitude);
       _mapController.move(newLoc, 17.0);
       if (mounted) {
@@ -442,7 +447,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   urlTemplate:
                                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                   userAgentPackageName:
-                                      'com.example.freshinbasket',
+                                      'com.freshinbasket.app',
                                 ),
                               ],
                             ),
