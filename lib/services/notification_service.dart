@@ -93,7 +93,7 @@ class NotificationService {
     try {
       // Request native iOS notification permission
       final iosPlugin = _localNotif.resolvePlatformSpecificImplementation<
-          DarwinFlutterLocalNotificationsPlugin>();
+          IOSFlutterLocalNotificationsPlugin>();
       final granted = await iosPlugin?.requestPermissions(
         alert: true,
         badge: true,
