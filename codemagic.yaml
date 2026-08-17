@@ -14,12 +14,15 @@ workflows:
       vars:
         BUNDLE_ID: "in.freshinbasket.app"
     scripts:
+      # Step 1: Get Flutter packages (this triggers project file upgrades)
       - name: Get Flutter dependencies
         script: |
           flutter pub get
+      # Step 2: Install CocoaPods dependencies
       - name: Install CocoaPods
         script: |
           cd ios && pod install
+      # Step 3: Set up code signing AFTER flutter has upgraded project files
       - name: Set up code signing
         script: |
           keychain initialize
@@ -28,13 +31,16 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
+      # Step 4: Build using xcode-project (Codemagic CLI) instead of flutter build ipa
       - name: Build iOS IPA
         script: |
-          flutter build ipa --release \
-            --export-options-plist=/Users/builder/export_options.plist
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner \
+            --archive-flags="-destination 'generic/platform=iOS'"
     artifacts:
       - build/ios/ipa/*.ipa
-      - build/ios/archive/*.xcarchive
+      - '**/*.ipa'
       - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
