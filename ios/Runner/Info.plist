@@ -6,6 +6,14 @@
 	<string>This app needs access to the microphone for voice search.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>This app needs speech recognition to transcribe your voice for searching products.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Freshinbasket needs your location to automatically set your delivery address and check if we deliver to your area.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Freshinbasket needs your location to accurately calculate delivery distance and provide timely deliveries.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Freshinbasket requires camera access to allow you to take and upload a profile picture.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Freshinbasket requires photo library access to choose a profile picture.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

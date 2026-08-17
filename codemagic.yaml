@@ -1,0 +1,46 @@
+workflows:
+  ios-release:
+    name: Freshinbasket iOS Release Build
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials # Define APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_PRIVATE_KEY in Codemagic UI if using API keys
+      vars:
+        BUNDLE_ID: "com.freshinbasket.app"
+    scripts:
+      - name: Get Flutter dependencies
+        script: |
+          flutter pub get
+      - name: Install CocoaPods
+        script: |
+          cd ios && pod install
+      - name: Set up code signing (if App Store credentials provided)
+        script: |
+          if [ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ]; then
+            keychain initialize
+            app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+            keychain add-certificates
+            xcode-project use-profiles
+          else
+            echo "No App Store credentials found, building without codesign..."
+          fi
+      - name: Build iOS IPA
+        script: |
+          if [ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ]; then
+            flutter build ipa --release
+          else
+            flutter build ipa --release --no-codesign
+          fi
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - build/ios/archive/*.xcarchive
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
