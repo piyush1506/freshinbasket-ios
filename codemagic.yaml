@@ -14,27 +14,48 @@ workflows:
       vars:
         BUNDLE_ID: "in.freshinbasket.app"
     scripts:
-      # Step 1: Get Flutter packages (this triggers project file upgrades)
       - name: Get Flutter dependencies
         script: |
           flutter pub get
-      # Step 2: Install CocoaPods dependencies
       - name: Install CocoaPods
         script: |
           cd ios && pod install
-      # Step 3: Set up code signing AFTER flutter has upgraded project files
       - name: Set up code signing
         script: |
           keychain initialize
-          # Generate a fresh private key for certificate creation
+
+          # Generate a fresh RSA private key
           openssl genrsa -out /tmp/cert_key.pem 2048
+
+          # Debug: List all existing certificates
+          echo "=== Listing existing certificates ==="
+          app-store-connect list-certificates --type IOS_DISTRIBUTION || true
+
+          # Create a new distribution certificate explicitly
+          echo "=== Creating new distribution certificate ==="
+          app-store-connect create-certificate \
+            --type IOS_DISTRIBUTION \
+            --certificate-key /tmp/cert_key.pem \
+            --save || echo "Certificate may already exist, continuing..."
+
+          # Fetch signing files (profiles + certificates)
+          echo "=== Fetching signing files ==="
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
             --certificate-key /tmp/cert_key.pem
+
+          # Add certificates to keychain
           keychain add-certificates
+
+          # Debug: List what was downloaded
+          echo "=== Downloaded certificates ==="
+          ls -la ~/Library/MobileDevice/Certificates/ || true
+          echo "=== Downloaded profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
+
+          # Apply profiles to Xcode project
           xcode-project use-profiles
-      # Step 4: Build using xcode-project (Codemagic CLI) instead of flutter build ipa
       - name: Build iOS IPA
         script: |
           xcode-project build-ipa \
