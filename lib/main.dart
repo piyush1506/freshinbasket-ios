@@ -42,32 +42,27 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // In release mode, suppress any visual error screens for end users
-  if (kReleaseMode) {
-    ErrorWidget.builder = (FlutterErrorDetails details) => const SizedBox.shrink();
-    FlutterError.onError = (FlutterErrorDetails details) {};
-    PlatformDispatcher.instance.onError = (error, stack) => true;
-  }
-
-  // Safe configuration load
+  // Load config & Firebase safely
   try {
     await dotenv.load(fileName: ".env");
   } catch (_) {}
 
-  // Safe Firebase initialization
-  bool firebaseReady = false;
   try {
     await Firebase.initializeApp();
-    firebaseReady = true;
   } catch (_) {}
 
-  if (firebaseReady) {
-    try {
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    } catch (_) {}
-  }
+  // Run app immediately so splash screen and UI render with zero delay!
+  runApp(const FreshInBasketApp());
 
-  // Setup Notification Service & trigger iOS native permission dialog on open
+  // Initialize notifications & request permissions in background after app is mounted
+  _initServicesAndPermissions();
+}
+
+Future<void> _initServicesAndPermissions() async {
+  try {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  } catch (_) {}
+
   try {
     NotificationService.onNavigate = (route, {arguments}) {
       navigatorKey.currentState?.pushNamedAndRemoveUntil(
@@ -80,15 +75,12 @@ void main() async {
     await NotificationService.instance.requestPermission();
   } catch (_) {}
 
-  // Request Location Permission on App Open
   try {
     LocationPermission locPerm = await Geolocator.checkPermission();
     if (locPerm == LocationPermission.denied) {
       await Geolocator.requestPermission();
     }
   } catch (_) {}
-
-  runApp(const FreshInBasketApp());
 }
 
 
