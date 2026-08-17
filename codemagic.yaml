@@ -8,7 +8,7 @@ workflows:
       xcode: latest
       cocoapods: default
       groups:
-        - app_store_credentials # Define APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_PRIVATE_KEY in Codemagic UI if using API keys
+        - app_store_credentials # Configure APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_PRIVATE_KEY in Codemagic UI
       vars:
         BUNDLE_ID: "com.freshinbasket.app"
     scripts:
@@ -26,7 +26,7 @@ workflows:
             keychain add-certificates
             xcode-project use-profiles
           else
-            echo "No App Store credentials found, building without codesign..."
+            echo "Building without codesign (No API key found)..."
           fi
       - name: Build iOS IPA
         script: |
@@ -40,7 +40,14 @@ workflows:
       - build/ios/archive/*.xcarchive
       - /tmp/xcodebuild_logs/*.log
     publishing:
+      email:
+        recipients:
+          - piyushkumarkumar7431@gmail.com
+        notify:
+          success: true
+          failure: true
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
-        submit_to_app_store: false
