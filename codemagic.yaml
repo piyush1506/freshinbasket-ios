@@ -8,31 +8,39 @@ workflows:
       xcode: latest
       cocoapods: default
       groups:
-        - app_store_credentials # Configure APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_PRIVATE_KEY in Codemagic UI
+        - t1
+        - app_store_credentials
       vars:
         BUNDLE_ID: "com.freshinbasket.app"
     scripts:
-      - name: Set up code signing settings on Xcode project
+      - name: Check Environment & Set up Code Signing
         script: |
-          if [ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ]; then
+          if [ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ] && [ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then
+            echo "✅ App Store Connect API Key found! Setting up certificates..."
             keychain initialize
             app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
             keychain add-certificates
             xcode-project use-profiles
           else
-            echo "No App Store API Key found, skipping certificate installation..."
+            echo "⚠️ WARNING: APP_STORE_CONNECT_KEY_IDENTIFIER or PRIVATE_KEY not found in environment."
+            echo "Please ensure the variables are added under the group 'app_store_credentials' in Codemagic."
           fi
-      - name: Get Flutter packages
+      - name: Get Flutter dependencies
         script: |
           flutter packages pub get
       - name: Install CocoaPods
         script: |
           find . -maxdepth 3 -name Podfile -execdir pod install \;
-      - name: Flutter build IPA
+      - name: Build Signed iOS IPA
         script: |
-          if [ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ]; then
+          if [ -f "/Users/builder/export_options.plist" ]; then
+            echo "Building signed release IPA using export_options.plist..."
+            flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+          elif [ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ]; then
+            echo "Building release IPA with auto-codesign..."
             flutter build ipa --release
           else
+            echo "Building unsigned archive (--no-codesign)..."
             flutter build ipa --release --no-codesign
           fi
     artifacts:
