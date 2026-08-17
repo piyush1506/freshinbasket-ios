@@ -134,20 +134,44 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
       if (permission == LocationPermission.deniedForever) {
         if (isUserClick && mounted) {
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                  'Location permissions are permanently denied. Please enable them in settings.'),
-              duration: const Duration(seconds: 4),
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: 'SETTINGS',
-                textColor: Colors.white,
-                onPressed: () async {
-                  await Geolocator.openAppSettings();
-                },
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              title: const Row(
+                children: [
+                  Icon(Icons.location_off_rounded, color: Color(0xFFE53935)),
+                  SizedBox(width: 8),
+                  Text('Location Permission',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
               ),
+              content: const Text(
+                'Location access is currently turned off in your iPhone settings. Please enable Location to automatically detect your delivery address.',
+                style: TextStyle(fontSize: 14),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel',
+                      style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Geolocator.openAppSettings();
+                  },
+                  child: const Text('Open Settings'),
+                ),
+              ],
             ),
           );
         }
