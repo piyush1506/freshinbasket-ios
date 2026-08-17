@@ -3,10 +3,15 @@ workflows:
     name: Freshinbasket iOS Release Build
     instance_type: mac_mini_m2
     max_build_duration: 60
+    integrations:
+      app_store_connect: Codemagic
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.freshinbasket.app
       groups:
         - t1
       vars:
@@ -14,30 +19,22 @@ workflows:
     scripts:
       - name: Get Flutter dependencies
         script: |
-          flutter packages pub get
+          flutter pub get
       - name: Install CocoaPods
         script: |
-          find . -maxdepth 3 -name Podfile -execdir pod install \;
+          cd ios && pod install
       - name: Set up code signing
         script: |
-          if [ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ] && [ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then
-            echo "✅ Setting up certificates with App Store Connect API Key..."
-            keychain initialize
-            app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
-            keychain add-certificates
-            xcode-project use-profiles
-          else
-            echo "⚠️ App Store Connect credentials not found in environment."
-          fi
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
       - name: Build iOS IPA
         script: |
-          if [ -f "/Users/builder/export_options.plist" ]; then
-            echo "Building signed IPA using export_options.plist..."
-            flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
-          else
-            echo "Building unsigned archive..."
-            flutter build ipa --release --no-codesign
-          fi
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - build/ios/archive/*.xcarchive
@@ -50,7 +47,5 @@ workflows:
           success: true
           failure: true
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
