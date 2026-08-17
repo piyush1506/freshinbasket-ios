@@ -12,13 +12,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.freshinbasket.app"
     scripts:
-      - name: Get Flutter dependencies
-        script: |
-          flutter pub get
-      - name: Install CocoaPods
-        script: |
-          cd ios && pod install
-      - name: Set up code signing (if App Store credentials provided)
+      - name: Set up code signing settings on Xcode project
         script: |
           if [ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ]; then
             keychain initialize
@@ -26,9 +20,15 @@ workflows:
             keychain add-certificates
             xcode-project use-profiles
           else
-            echo "Building without codesign (No API key found)..."
+            echo "No App Store API Key found, skipping certificate installation..."
           fi
-      - name: Build iOS IPA
+      - name: Get Flutter packages
+        script: |
+          flutter packages pub get
+      - name: Install CocoaPods
+        script: |
+          find . -maxdepth 3 -name Podfile -execdir pod install \;
+      - name: Flutter build IPA
         script: |
           if [ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ]; then
             flutter build ipa --release
