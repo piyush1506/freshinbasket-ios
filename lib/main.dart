@@ -22,13 +22,17 @@ import 'screens/help_center_screen.dart';
 import 'screens/order_success_screen.dart';
 import 'screens/order_fail_screen.dart';
 import 'screens/splash_screen.dart';
+import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'services/notification_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Top-level background handler — required by firebase_messaging
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {}
 }
 
 // Global navigator key for notification tap navigation
@@ -36,26 +40,44 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
-  await Firebase.initializeApp();
 
-  // Register background message handler before any messaging setup
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  // In release mode, suppress any visual error screens for end users
+  if (kReleaseMode) {
+    ErrorWidget.builder = (FlutterErrorDetails details) => const SizedBox.shrink();
+    FlutterError.onError = (FlutterErrorDetails details) {};
+    PlatformDispatcher.instance.onError = (error, stack) => true;
+  }
 
-  // Wire notification navigation callback
-  NotificationService.onNavigate = (route, {arguments}) {
-    navigatorKey.currentState?.pushNamedAndRemoveUntil(
-      route,
-      (r) => false,
-      arguments: arguments,
-    );
-  };
+  // Safe configuration load
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (_) {}
 
-  await NotificationService.instance.initialize();
-  await NotificationService.instance.requestPermission();
+  // Safe Firebase & Push Notifications initialization
+  bool firebaseReady = false;
+  try {
+    await Firebase.initializeApp();
+    firebaseReady = true;
+  } catch (_) {}
+
+  if (firebaseReady) {
+    try {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      NotificationService.onNavigate = (route, {arguments}) {
+        navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          route,
+          (r) => false,
+          arguments: arguments,
+        );
+      };
+      await NotificationService.instance.initialize();
+      await NotificationService.instance.requestPermission();
+    } catch (_) {}
+  }
 
   runApp(const FreshInBasketApp());
 }
+
 
 
 class FreshInBasketApp extends StatelessWidget {

@@ -44,3 +44,7 @@ android/*.json
 release-key.jks
 upload-keystore.jks
 *.jks
+*.key
+*.pem
+*.p12
+cert_key.txt

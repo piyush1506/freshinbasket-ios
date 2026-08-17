@@ -5,7 +5,14 @@ import '../models/user.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthService {
-  static String get baseUrl => dotenv.env['API_URL'] ?? 'https://freshinbasket.com';
+  static String get baseUrl {
+    try {
+      if (dotenv.isInitialized) {
+        return dotenv.env['API_URL'] ?? 'https://freshinbasket.com';
+      }
+    } catch (_) {}
+    return 'https://freshinbasket.com';
+  }
 
   static Future<Map<String, dynamic>> login(String email, String password) async {
     final res = await http.post(

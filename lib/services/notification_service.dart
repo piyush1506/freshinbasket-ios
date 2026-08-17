@@ -33,7 +33,14 @@ class NotificationService {
   static final NotificationService _instance = NotificationService._();
   static NotificationService get instance => _instance;
 
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  FirebaseMessaging? get _fcm {
+    try {
+      return FirebaseMessaging.instance;
+    } catch (_) {
+      return null;
+    }
+  }
+
   final FlutterLocalNotificationsPlugin _localNotif =
       FlutterLocalNotificationsPlugin();
 
@@ -42,59 +49,74 @@ class NotificationService {
 
   // ─── Initialize ───────────────────────────────────────────────────────────
   Future<void> initialize() async {
-    // 1. Setup local notifications
-    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosInit = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
-    );
-    await _localNotif.initialize(
-      const InitializationSettings(android: androidInit, iOS: iosInit),
-      onDidReceiveNotificationResponse: _onNotificationTap,
-    );
+    try {
+      // 1. Setup local notifications
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const iosInit = DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      );
+      await _localNotif.initialize(
+        const InitializationSettings(android: androidInit, iOS: iosInit),
+        onDidReceiveNotificationResponse: _onNotificationTap,
+      );
 
-    // 2. Create Android notification channels
-    final androidPlugin = _localNotif
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
-    await androidPlugin?.createNotificationChannel(_orderChannel);
-    await androidPlugin?.createNotificationChannel(_promoChannel);
+      // 2. Create Android notification channels
+      final androidPlugin = _localNotif
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.createNotificationChannel(_orderChannel);
+      await androidPlugin?.createNotificationChannel(_promoChannel);
 
-    // 3. Handle FCM foreground messages
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+      // 3. Handle FCM foreground messages
+      final fcm = _fcm;
+      if (fcm != null) {
+        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-    // 4. Handle notification tap when app is in background (not closed)
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+        // 4. Handle notification tap when app is in background (not closed)
+        FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
-    // 5. Handle notification tap when app was fully closed
-    final initialMessage = await _fcm.getInitialMessage();
-    if (initialMessage != null) {
-      _handleNotificationTap(initialMessage);
+        // 5. Handle notification tap when app was fully closed
+        final initialMessage = await fcm.getInitialMessage();
+        if (initialMessage != null) {
+          _handleNotificationTap(initialMessage);
+        }
+      }
+    } catch (_) {
+      // Notification setup failure should not crash app
     }
   }
 
   // ─── Request permission ────────────────────────────────────────────────────
   Future<bool> requestPermission() async {
-    final settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
-    return settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional;
+    try {
+      final fcm = _fcm;
+      if (fcm == null) return false;
+      final settings = await fcm.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ─── Get FCM token and register with backend ───────────────────────────────
   Future<void> getAndRegisterToken() async {
     try {
-      final token = await _fcm.getToken();
+      final fcm = _fcm;
+      if (fcm == null) return;
+      final token = await fcm.getToken();
       if (token != null) {
         await ApiService.registerFCMToken(token);
       }
       // Listen for token refresh (e.g., app reinstall, token rotation)
-      _fcm.onTokenRefresh.listen((newToken) async {
+      fcm.onTokenRefresh.listen((newToken) async {
         try {
           await ApiService.registerFCMToken(newToken);
         } catch (_) {}
