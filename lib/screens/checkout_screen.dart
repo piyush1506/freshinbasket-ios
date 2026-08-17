@@ -447,7 +447,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   urlTemplate:
                                       'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                   userAgentPackageName:
-                                      'com.freshinbasket.app',
+                                      'in.freshinbasket.app',
                                 ),
                               ],
                             ),
