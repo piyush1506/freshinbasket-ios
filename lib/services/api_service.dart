@@ -271,11 +271,11 @@ class ApiService {
     return (data['items'] as List?)?.map((i) => CartItem.fromJson(i)).toList() ?? [];
   }
 
-  static Future<void> addToCart(int productId, double quantity) async {
+  static Future<void> addToCart(int productId, double quantity, {bool isAbsolute = false}) async {
     await _request(() async => http.post(
       Uri.parse('$baseUrl/api/v1/cart/add_item/'),
       headers: await _headers(),
-      body: json.encode({'product_id': productId, 'quantity': quantity}),
+      body: json.encode({'product_id': productId, 'quantity': quantity, 'is_absolute': isAbsolute}),
     ));
   }
 
@@ -569,6 +569,20 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/notifications/register-token/'),
       headers: await _headers(),
       body: json.encode({'token': token}),
+    ));
+  }
+
+  static Future<void> registerDeviceToken({
+    required String token,
+    String platform = 'ios',
+  }) async {
+    await _request(() async => http.post(
+      Uri.parse('$baseUrl/api/v1/notifications/register-device/'),
+      headers: await _headers(),
+      body: json.encode({
+        'token': token,
+        'platform': platform,
+      }),
     ));
   }
 }

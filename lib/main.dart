@@ -49,7 +49,9 @@ void main() async {
 
   try {
     await Firebase.initializeApp();
-  } catch (_) {}
+  } catch (e) {
+    debugPrint('[Firebase] Initialization error: $e');
+  }
 
   // Run app immediately so splash screen and UI render with zero delay!
   runApp(const FreshInBasketApp());
@@ -73,7 +75,11 @@ Future<void> _initServicesAndPermissions() async {
     };
     await NotificationService.instance.initialize();
     await NotificationService.instance.requestPermission();
-  } catch (_) {}
+    // Register device/FCM token on app startup (covers guests and returning users)
+    NotificationService.instance.getAndRegisterToken();
+  } catch (e) {
+    debugPrint('[NotificationService] Initialization error: $e');
+  }
 
   try {
     LocationPermission locPerm = await Geolocator.checkPermission();

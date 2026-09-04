@@ -23,6 +23,8 @@ class AuthProvider extends ChangeNotifier {
     final loggedIn = await AuthService.isLoggedIn();
     if (loggedIn) {
       _user = await AuthService.getCurrentUser();
+      // Ensure FCM token is linked to the authenticated user on session restore
+      NotificationService.instance.getAndRegisterToken();
     }
     notifyListeners();
   }

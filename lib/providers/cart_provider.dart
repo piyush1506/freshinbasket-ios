@@ -133,7 +133,7 @@ class CartProvider extends ChangeNotifier {
       if (quantity <= 0) {
         await ApiService.removeFromCart(productId);
       } else {
-        await ApiService.addToCart(productId, quantity);
+        await ApiService.addToCart(productId, quantity, isAbsolute: true);
       }
       await _fetchFromBackend(silent: true);
     } catch (_) {
